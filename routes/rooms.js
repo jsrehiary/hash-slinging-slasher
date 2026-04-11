@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const HomeController = require("../controllers/HomeController");
 
-const {
-  getAllRooms,
-  getRoomById,
-  getAvailability
-} = require("../controllers/roomsController");
+// ⚠️ TARUH INI PALING ATAS
+router.get("/available", HomeController.getAllRooms);
 
-router.get("/", getAllRooms);
-router.get("/:id", getRoomById);
-router.get("/:id/availability", getAvailability);
+// baru dynamic
+router.get("/:id/events", HomeController.getRoomEvents);
+router.get("/:id/availability", HomeController.getAvailability);
+router.get("/range", HomeController.getRange);
+
 
 module.exports = router;

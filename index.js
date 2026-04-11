@@ -1,19 +1,19 @@
-const express = require("express");
-const roomsRoutes = require("./routes/rooms");
 require("dotenv").config();
-
+const cors = require("cors");
+const express = require("express");
 const app = express();
-const PORT = 3000;
+app.use(cors({
+    origin: "http://127.0.0.1:5500",
+}));
+
+const roomsRoute = require("./routes/rooms");
 
 app.use(express.json());
 
-// route utama
-app.use("/rooms", roomsRoutes);
+app.use("/rooms", roomsRoute);
 
-app.get("/", (req, res) => {
-  res.send("API is running 🚀");
-});
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server jalan di http://localhost:${PORT}`);
 });
