@@ -15,7 +15,7 @@
 
         <!-- RATE LIMIT INDICATOR -->
         <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded flex justify-between items-center">
-            <span class="text-sm text-gray-700">📊 API Calls: <span id="callCounter" class="font-bold text-blue-600">30/30</span> remaining this minute</span>
+            <span class="text-sm text-gray-700">📊 API Calls: <span id="callCounter" class="font-bold text-blue-600">5/5</span> remaining this minute</span>
         </div>
 
         <!-- FORM -->
@@ -61,7 +61,7 @@
 
         // Call rate limiting
         const RATE_LIMIT = {
-            maxCalls: 30,
+            maxCalls: 5,
             windowMs: 60000, // 1 minute
             calls: [],
             get remaining() {
@@ -83,7 +83,7 @@
         function showRateLimitWarning() {
             const remaining = RATE_LIMIT.remaining;
             const message = remaining === 0
-                ? "⚠️ Call limit reached! (30 calls per minute)\n\nPlease wait before making another request."
+                ? "⚠️ Call limit reached! (5 calls per minute)\n\nPlease wait before making another request."
                 : `⚠️ Warning: Only ${remaining} calls remaining this minute!`;
             
             alert(message);
@@ -93,7 +93,7 @@
         function updateCallCounter() {
             const remaining = RATE_LIMIT.remaining;
             const counter = document.getElementById("callCounter");
-            counter.textContent = `${remaining}/30`;
+            counter.textContent = `${remaining}/5`;
             
             // Change color based on remaining calls
             if (remaining === 0) {
