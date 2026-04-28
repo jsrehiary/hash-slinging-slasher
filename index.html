@@ -13,6 +13,11 @@
 
         <h1 class="text-2xl font-bold mb-4">Room Checker</h1>
 
+        <!-- RATE LIMIT INDICATOR -->
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded flex justify-between items-center">
+            <span class="text-sm text-gray-700">📊 API Calls: <span id="callCounter" class="font-bold text-blue-600">30/30</span> remaining this minute</span>
+        </div>
+
         <!-- FORM -->
         <div class="flex gap-2 mb-4 flex-wrap">
 
@@ -53,6 +58,55 @@
             ? "http://localhost:3000/rooms"
             : `${window.location.origin}/rooms`;
 
+        // Call rate limiting
+        const RATE_LIMIT = {
+            maxCalls: 30,
+            windowMs: 60000, // 1 minute
+            calls: [],
+            get remaining() {
+                const now = Date.now();
+                this.calls = this.calls.filter(time => now - time < this.windowMs);
+                return Math.max(0, this.maxCalls - this.calls.length);
+            },
+            canMakeCall() {
+                const now = Date.now();
+                this.calls = this.calls.filter(time => now - time < this.windowMs);
+                return this.calls.length < this.maxCalls;
+            },
+            recordCall() {
+                this.calls.push(Date.now());
+            }
+        };
+
+        // Show rate limit warning
+        function showRateLimitWarning() {
+            const remaining = RATE_LIMIT.remaining;
+            const message = remaining === 0
+                ? "⚠️ Call limit reached! (30 calls per minute)\n\nPlease wait before making another request."
+                : `⚠️ Warning: Only ${remaining} calls remaining this minute!`;
+            
+            alert(message);
+        }
+
+        // Update call counter display
+        function updateCallCounter() {
+            const remaining = RATE_LIMIT.remaining;
+            const counter = document.getElementById("callCounter");
+            counter.textContent = `${remaining}/30`;
+            
+            // Change color based on remaining calls
+            if (remaining === 0) {
+                counter.className = "font-bold text-red-600";
+            } else if (remaining <= 3) {
+                counter.className = "font-bold text-orange-600";
+            } else {
+                counter.className = "font-bold text-blue-600";
+            }
+        }
+
+        // Update counter every 100ms
+        setInterval(updateCallCounter, 100);
+
         // default hari ini
         const today = new Date().toISOString().split("T")[0];
         document.getElementById("startDate").value = today;
@@ -85,6 +139,15 @@
                 resultDiv.innerHTML = "⚠️ Range tanggal tidak valid";
                 return;
             }
+
+            // Check rate limit
+            if (!RATE_LIMIT.canMakeCall()) {
+                showRateLimitWarning();
+                return;
+            }
+
+            // Record the API call
+            RATE_LIMIT.recordCall();
 
             resultDiv.innerHTML = "Loading...";
 
