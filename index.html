@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Room Scheduler</title>
+    <title>Room Checker</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -35,15 +35,23 @@
             <button onclick="getEvents()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                 Check
             </button>
+            <button onclick="savePDF()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Save as PDF
+            </button>
         </div>
 
         <!-- RESULT -->
-        <div id="result" class="space-y-3"></div>
+        <div id="pdfContent">
+            <div id="result" class="space-y-3"></div>
+        </div>
 
     </div>
 
     <script>
-        const API_BASE = "http://localhost:3000/rooms";
+        // Environment-aware API base URL
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? "http://localhost:3000/rooms"
+            : `${window.location.origin}/rooms`;
 
         // default hari ini
         const today = new Date().toISOString().split("T")[0];
@@ -82,7 +90,7 @@
 
             try {
 
-                // 🔥 CASE: SEMUA RUANGAN (MATRIX)
+                // CASE: SEMUA RUANGAN (MATRIX)
                 if (roomId === "all") {
                     const res = await fetch(`${API_BASE}/range?start=${start}&end=${end}`);
                     const json = await res.json();
@@ -91,16 +99,16 @@
                     const dates = getDateRange(start, end);
 
                     let table = `
-        <div class="overflow-x-auto">
-        <table class="table-auto border w-full text-sm">
-          <thead>
-            <tr>
-              <th class="border px-2 py-1">Ruangan</th>
-              ${dates.map(d => `<th class="border px-2">${d.slice(5)}</th>`).join("")}
-            </tr>
-          </thead>
-          <tbody>
-      `;
+                        <div class="overflow-x-auto">
+                            <table style="page-break-inside: none;" class="table-auto border w-full text-sm">
+                                <thead>
+                                    <tr>
+                                    <th class="border px-2 py-1">Ruangan</th>
+                                    ${dates.map(d => `<th class="border px-2">${d.slice(5)}</th>`).join("")}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
 
                     data.rooms.forEach(room => {
                         table += `<tr><td class="border px-2 font-medium">${room.room_name}</td>`;
@@ -109,21 +117,23 @@
                             const events = room.availability[date];
 
                             table += `
-            <td class="border text-center align-top text-xs p-1">
-    ${
-      events
-        ? `
-        <div class="text-red-600">🔴</div>
-        ${events.map(ev => `
-          <div class="text-[10px] text-gray-700">
-            ${ev.start}-${ev.end}
-          </div>
-        `).join("")}
-        `
-        : `<div class="text-green-600">🟢</div>`
-    }
-  </td>
-          `;
+                            <td class="border text-center align-top text-xs p-1">
+                                ${events
+                                    ? `
+                                    <div class="text-red-600">🔴</div>
+                                    ${events.map(ev => `
+                                    <div class="text-[10px] text-gray-700">
+                                        ${ev.start}-${ev.end}
+                                    </div>
+                                    <div class="text-[10px] text-gray-700">
+                                        ${ev.acara}
+                                    </div>
+                                    `).join("")}
+                                    `
+                                    : `<div class="text-green-600">🟢</div>`
+                                }
+                            </td>
+                                    `;
                         });
 
                         table += `</tr>`;
@@ -135,7 +145,6 @@
                     return;
                 }
 
-                // 🔥 CASE: SINGLE ROOM (range events)
                 const res = await fetch(`${API_BASE}/${roomId}/events?date=${start}`);
                 const json = await res.json();
                 const data = json.data;
@@ -156,8 +165,21 @@
                 resultDiv.innerHTML = "❌ Error";
             }
         }
-    </script>
+        function savePDF() {
+            const element = document.getElementById("pdfContent");
 
+            const opt = {
+                margin: 0.5,
+                filename: 'room-checker.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } // landscape biar tabel muat
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 
 </html>
