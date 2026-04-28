@@ -32,6 +32,7 @@
                 <option value="61">GSG: Sayap Kiri Lantai 3</option>
                 <option value="3">GSG: VIP B</option>
                 <option value="2">GSG: VIP A</option>
+                <option value="1">GSG: Aula Besar Lt. 1</option>
             </select>
 
             <input id="startDate" type="date" class="border p-2 rounded" />
@@ -208,21 +209,52 @@
                     return;
                 }
 
-                const res = await fetch(`${API_BASE}/${roomId}/events?date=${start}`);
-                const json = await res.json();
-                const data = json.data;
+                // For single room, loop through date range
+                const dates = getDateRange(start, end);
+                const allEvents = [];
+                const roomName = document.querySelector(`#roomId option[value="${roomId}"]`).text;
 
-                if (data.total_event === 0) {
-                    resultDiv.innerHTML = "✅ Tidak ada event";
+                for (const date of dates) {
+                    try {
+                        const res = await fetch(`${API_BASE}/${roomId}/events?date=${date}`);
+                        const json = await res.json();
+                        const data = json.data;
+
+                        if (data.events && data.events.length > 0) {
+                            data.events.forEach(event => {
+                                allEvents.push({ ...event, date });
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Error fetching events for ${date}:`, err);
+                    }
+                }
+
+                if (allEvents.length === 0) {
+                    resultDiv.innerHTML = `✅ ${roomName}: Tidak ada event dalam range ini`;
                     return;
                 }
 
-                resultDiv.innerHTML = data.events.map(event => `
-      <div class="p-3 border rounded">
-        <b>${event.acara}</b><br>
-        ⏰ ${event.start} → ${event.end}
-      </div>
-    `).join("");
+                // Sort events by date and time
+                allEvents.sort((a, b) => {
+                    const dateCompare = a.date.localeCompare(b.date);
+                    if (dateCompare !== 0) return dateCompare;
+                    return a.start.localeCompare(b.start);
+                });
+
+                resultDiv.innerHTML = `
+                    <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                        <h3 class="font-bold text-lg">${roomName}</h3>
+                        <p class="text-sm text-gray-600">Periode: ${start} hingga ${end}</p>
+                    </div>
+                    ${allEvents.map(event => `
+                        <div class="p-3 border rounded">
+                            <div class="text-xs text-gray-500 mb-1">📅 ${event.date}</div>
+                            <b>${event.acara}</b><br>
+                            ⏰ ${event.start} → ${event.end}
+                        </div>
+                    `).join("")}
+                `;
 
             } catch (err) {
                 resultDiv.innerHTML = "❌ Error";
